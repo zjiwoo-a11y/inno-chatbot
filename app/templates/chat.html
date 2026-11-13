@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}채팅{% endblock %}
+{% block content %}
+<div class="chat-center">
+{% if not has_documents %}
+<div class="no-docs-banner">
+  아직 업로드된 문서가 없습니다. <a href="/upload">문서 업로드</a>에서 PDF 또는 Word 파일을 먼저 올려주세요.
+</div>
+<script>
+  alert("아직 업로드된 문서가 없습니다. '문서 업로드' 메뉴에서 PDF 또는 Word 파일을 먼저 올려주세요.");
+</script>
+{% endif %}
+<div class="chat-wrap">
+  <div class="mode-switch" role="tablist">
+    <button type="button" class="mode-btn active" data-mode="rag">문서 질문</button>
+    <button type="button" class="mode-btn" data-mode="sql">SQL 생성</button>
+  </div>
+  <div class="category-filter" id="system-filter" style="display:none">
+    <label for="system-select">대상 시스템</label>
+    <select id="system-select"></select>
+  </div>
+  {% if categories %}
+  <div class="category-filter" id="category-filter">
+    <label for="category-select">검색 범위</label>
+    <select id="category-select">
+      <option value="">전체 문서</option>
+      {% for c in categories %}
+      <option value="{{ c }}">{{ c }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <div id="messages" class="messages"></div>
+  <form id="chat-form" class="chat-form">
+    <textarea id="question" name="question" placeholder="프로젝트 관련 질문을 입력하세요..." data-ph-rag="프로젝트 관련 질문을 입력하세요..." data-ph-sql="예) 장기상품의 상품코드와 상품명을 보여줘" required></textarea>
+    <button type="submit">보내기</button>
+  </form>
+</div>
+</div>
+<script src="/static/chat.js"></script>
+{% endblock %}

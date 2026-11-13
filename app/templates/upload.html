@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}문서 업로드{% endblock %}
+{% block content %}
+<div class="content-narrow">
+<a href="/" class="back-link">← 채팅으로 돌아가기</a>
+<h1>문서 업로드</h1>
+<p class="muted">PDF, Word(.docx) 파일을 올리면 자동으로 청킹·임베딩되어 바로 검색 가능해집니다.</p>
+
+{% if results %}
+<div class="upload-results">
+  {% for r in results %}
+  <div class="upload-result {{ 'ok' if r.chunks > 0 else 'fail' }}">
+    <strong>{{ r.filename }}</strong>
+    {% if r.chunks > 0 %}
+      — {{ r.chunks }}개 청크로 색인 완료
+    {% else %}
+      — {{ r.message }}
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" action="/upload" enctype="multipart/form-data" id="upload-form">
+  <label for="category-input" class="field-label">카테고리 (선택 — 예: 인사팀, 개발가이드)</label>
+  <input
+    type="text" name="category" id="category-input" list="category-options"
+    placeholder="비워두면 '미분류'로 저장됩니다" class="category-input"
+  >
+  <datalist id="category-options">
+    {% for c in categories %}
+    <option value="{{ c }}"></option>
+    {% endfor %}
+  </datalist>
+
+  <div id="dropzone" class="dropzone">
+    <p class="dropzone-title">여기로 파일을 끌어다 놓거나, 클릭해서 선택하세요</p>
+    <p class="muted">.pdf / .docx 지원 (여러 개 한 번에 가능)</p>
+    <input type="file" name="files" id="file-input" multiple accept=".pdf,.docx" hidden>
+  </div>
+  <p id="selected-files" class="muted"></p>
+  <button type="submit" id="upload-btn" disabled>업로드 및 색인하기</button>
+</form>
+<script src="/static/upload.js"></script>
+
+<h2 class="doc-list-title">업로드된 문서</h2>
+{% if documents %}
+<div class="doc-list">
+  {% for d in documents %}
+  <div class="doc-item">
+    <div class="doc-info">
+      <span class="doc-name">
+        {{ d.filename }}
+        {% if d.category %}<span class="category-badge">{{ d.category }}</span>{% else %}<span class="category-badge muted-badge">미분류</span>{% endif %}
+      </span>
+      <span class="doc-meta">{{ d.chunk_count }}개 청크 색인됨</span>
+    </div>
+    <form method="post" action="/upload/delete"
+          onsubmit="return confirm('\'{{ d.filename }}\'을(를) 완전히 삭제할까요? 색인된 내용도 모두 사라지고 되돌릴 수 없습니다.');">
+      <input type="hidden" name="source_path" value="{{ d.source_path }}">
+      <button type="submit" class="delete-btn">삭제</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted">아직 업로드된 문서가 없습니다.</p>
+{% endif %}
+</div>
+{% endblock %}

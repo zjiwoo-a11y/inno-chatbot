@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}미응답{% endblock %}
+{% block content %}
+<div class="content-narrow">
+<a href="/" class="back-link">← 채팅으로 돌아가기</a>
+<h1>미응답 질문</h1>
+<p class="muted">문서에 근거가 없어 답하지 못한 질문입니다. 문서를 보완한 뒤 "해결" 처리하세요.</p>
+{% if note_required_error %}
+<div class="no-docs-banner">보완 메모를 입력해야 해결 처리할 수 있습니다. 어떤 문서를 추가·수정했는지 적어주세요.</div>
+{% endif %}
+<div class="unanswered-list">
+  {% for item in items %}
+  <div class="unanswered-card" id="item-{{ item.id }}">
+    <div class="q">{{ item.question }}</div>
+    <div class="meta">{{ item.user.username }} · {{ item.created_at.strftime("%Y-%m-%d %H:%M") }} · 최고 유사도 {{ item.best_score }}</div>
+    <form method="post" action="/admin/unanswered/{{ item.id }}/resolve" class="resolve-form">
+      <input type="text" name="note" placeholder="보완 메모 (필수 — 예: 어떤 문서를 추가했는지)" required>
+      <button type="submit">해결 처리</button>
+    </form>
+  </div>
+  {% else %}
+  <p class="muted">현재 미응답 질문이 없습니다.</p>
+  {% endfor %}
+</div>
+</div>
+{% endblock %}

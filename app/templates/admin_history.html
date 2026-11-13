@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}대화 이력{% endblock %}
+{% block content %}
+<a href="/" class="back-link">← 채팅으로 돌아가기</a>
+<h1>대화 이력 (최근 200건)</h1>
+<div class="table-scroll">
+<table>
+  <thead>
+    <tr>
+      <th class="col-time">시각</th>
+      <th class="col-user">사용자</th>
+      <th class="col-question">질문</th>
+      <th class="col-answer">답변</th>
+      <th class="col-status">근거</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for m in messages %}
+    <tr>
+      <td class="nowrap col-time">{{ m.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+      <td class="col-user">{{ m.user.username }}</td>
+      <td class="col-question">{{ m.question }}</td>
+      <td class="col-answer">{{ m.answer }}</td>
+      <td class="col-status">
+        {% if m.was_answerable %}
+          <span class="tag ok">답변됨</span>
+        {% else %}
+          <span class="tag risk">미응답</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="muted">아직 대화 기록이 없습니다.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

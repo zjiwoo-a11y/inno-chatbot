@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}프로젝트 지원 RAG 챗봇{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" type="image/png" href="/static/robot-icon.png">
+</head>
+<body>
+  {% if user %}
+  <nav class="topnav">
+    <a href="/" class="brand">
+      <img src="/static/robot-icon.png" alt="" class="brand-icon">
+      RAG 챗봇
+    </a>
+    <div class="nav-links">
+      <a href="/upload">문서 업로드</a>
+      {% if user.role == "admin" %}
+        <a href="/admin/history">대화 이력</a>
+        <a href="/admin/unanswered">미응답</a>
+        <a href="/admin/sql-metadata">SQL 메타데이터</a>
+      {% endif %}
+      <span class="who">{{ user.username }} ({{ user.role }})</span>
+      <a href="/logout">로그아웃</a>
+    </div>
+  </nav>
+  {% endif %}
+  <main class="shell">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}SQL 메타데이터{% endblock %}
+{% block content %}
+<div class="content-narrow" style="max-width: 1100px">
+  <a href="/" class="back-link">← 채팅으로 돌아가기</a>
+
+  <div class="meta-head">
+    <h1>SQL 메타데이터</h1>
+    <p>Text-to-SQL이 참고하는 테이블, 컬럼, 용어, 예시를 시스템별로 관리합니다. 엑셀이나 구글 시트를 고치면 다음 질문부터 반영됩니다.</p>
+  </div>
+
+  {% if msg %}<div class="flash-ok">{{ msg }}</div>{% endif %}
+  {% if error %}<div class="flash-err">{{ error }}</div>{% endif %}
+
+  <div class="meta-grid">
+    {% for s in systems %}
+    <section class="meta-card">
+      <div class="sys-top">
+        <div>
+          <h2 class="sys-name">{{ s.name }}</h2>
+          <span class="sys-id">{{ s.id }}</span>
+        </div>
+        <span class="pill {{ 'google' if s.is_google else 'excel' }}">{{ '구글 시트' if s.is_google else '엑셀 파일' }}</span>
+      </div>
+
+      {% if s.load_error %}
+        <div class="sys-state"><span class="dot bad"></span><b>읽지 못했습니다</b></div>
+        <div class="flash-err">{{ s.load_error }}</div>
+      {% else %}
+        {% if s.status.error %}
+          <div class="sys-state"><span class="dot bad"></span><b>갱신 실패</b><span class="detail">마지막 성공본으로 동작 중</span></div>
+          <div class="flash-err">{{ s.status.error }}</div>
+        {% else %}
+          {% set detail = s.status.source.split('(', 1)[1][:-1] if '(' in s.status.source else '' %}
+          <div class="sys-state"><span class="dot ok"></span><b>정상</b>{% if detail %}<span class="detail">{{ detail[:24] ~ ('…' if detail|length > 24 else '') }}</span>{% endif %}</div>
+        {% endif %}
+
+        {% if s.summary %}
+        <div class="stat-row">
+          <div class="stat"><b>{{ s.summary.tables|length }}</b><span>테이블</span></div>
+          <div class="stat"><b>{{ s.summary.rules }}</b><span>전역규칙</span></div>
+          <div class="stat"><b>{{ s.summary.glossary }}</b><span>용어</span></div>
+          <div class="stat"><b>{{ s.summary.examples }}</b><span>예시</span></div>
+        </div>
+        <ul class="tbl-list">
+          {% for n, k, c in s.summary.tables %}
+          <li><span><code>{{ n }}</code><span class="ko">{{ k }}</span></span><span class="cnt">컬럼 {{ c }}개</span></li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      {% endif %}
+
+      <div class="btn-row">
+        <form method="post" action="/admin/sql-metadata/reload">
+          <input type="hidden" name="system" value="{{ s.id }}">
+          <button type="submit" class="btn btn-green">다시 불러오기</button>
+        </form>
+        {% if s.is_google and s.sheet_url %}
+        <a class="btn btn-ghost" href="{{ s.sheet_url }}" target="_blank" rel="noopener">구글 시트 열기</a>
+        {% endif %}
+        <a class="btn btn-ghost" href="/admin/sql-metadata/download?system={{ s.id }}">엑셀 내려받기</a>
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+
+  <section class="meta-card">
+    <h2>원본 설정 / 시스템 추가</h2>
+    <p class="sub">메타데이터를 읽어 올 곳을 정합니다. 기본은 구글 시트이고, 엑셀 파일을 올려서 쓸 수도 있습니다. 저장하기 전에 구조를 검사하며, 맞지 않으면 기존 설정이 그대로 유지됩니다.</p>
+    <form method="post" action="/admin/sql-metadata/source" enctype="multipart/form-data">
+      <input class="text-input" type="text" name="system" list="system-ids" placeholder="시스템 ID (비워 두면 시트 안내의 시스템ID, 없으면 {{ default_system }})">
+      <datalist id="system-ids">{% for s in systems %}<option value="{{ s.id }}">{% endfor %}</datalist>
+
+      <div class="seg">
+        <label><input type="radio" name="kind" value="google" checked>구글 시트</label>
+        <label><input type="radio" name="kind" value="excel">엑셀 업로드</label>
+      </div>
+
+      <div id="pane-google">
+        <input class="text-input" type="text" name="sheet_url" placeholder="https://docs.google.com/spreadsheets/d/…">
+        <p class="hint">공유를 "링크가 있는 모든 사용자: 뷰어"로 설정한 시트여야 합니다. 시트를 고치면 60초 안에 반영됩니다.</p>
+      </div>
+      <div id="pane-excel" style="display:none">
+        <label class="file-pick">
+          <input type="file" name="file" accept=".xlsx" id="meta-file">
+          <span class="t">클릭해서 엑셀 파일 선택</span>
+          <span class="f" id="meta-file-name">.xlsx 파일만 가능합니다</span>
+        </label>
+        <p class="hint">같은 시스템 ID의 기존 파일은 .bak으로 보관됩니다.</p>
+      </div>
+      <button type="submit" class="btn btn-green">저장</button>
+    </form>
+  </section>
+</div>
+<script>
+  const panes = { google: document.getElementById("pane-google"), excel: document.getElementById("pane-excel") };
+  document.querySelectorAll('input[name="kind"]').forEach((r) => r.addEventListener("change", () => {
+    panes.google.style.display = r.value === "google" && r.checked ? "" : "none";
+    panes.excel.style.display = r.value === "excel" && r.checked ? "" : "none";
+  }));
+  const metaFile = document.getElementById("meta-file");
+  metaFile.addEventListener("change", () => {
+    document.getElementById("meta-file-name").textContent = metaFile.files.length ? metaFile.files[0].name : ".xlsx 파일만 가능합니다";
+  });
+</script>
+{% endblock %}
